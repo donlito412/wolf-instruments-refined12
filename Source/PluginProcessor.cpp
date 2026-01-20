@@ -66,8 +66,10 @@ void HowlingWolvesAudioProcessor::changeProgramName(
 //==============================================================================
 void HowlingWolvesAudioProcessor::prepareToPlay(double sampleRate,
                                                 int samplesPerBlock) {
-  synthEngine.setCurrentPlaybackSampleRate(sampleRate);
+  synthEngine.prepare(sampleRate, samplesPerBlock);
 }
+
+// ...
 
 void HowlingWolvesAudioProcessor::releaseResources() {
   // When playback stops, you can use this as an opportunity to free up any
@@ -97,27 +99,33 @@ void HowlingWolvesAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
                                       true);
 
   // Update Parameters from APVTS
-  auto *attack = apvts.getRawParameterValue("attack");
-  auto *decay = apvts.getRawParameterValue("decay");
-  auto *sustain = apvts.getRawParameterValue("sustain");
-  auto *release = apvts.getRawParameterValue("release");
-  auto *gain = apvts.getRawParameterValue("gain");
+  auto *attack = apvts.getRawParameterValue(ParamIDs::attack);
+  auto *decay = apvts.getRawParameterValue(ParamIDs::decay);
+  auto *sustain = apvts.getRawParameterValue(ParamIDs::sustain);
+  auto *release = apvts.getRawParameterValue(ParamIDs::release);
 
-  if (attack && decay && sustain && release) {
-    synthEngine.updateADSR(attack->load(), decay->load(), sustain->load(),
-                           release->load());
+  auto *cutoff = apvts.getRawParameterValue("cutoff");
+  auto *res = apvts.getRawParameterValue("resonance");
+  auto *lfoRate = apvts.getRawParameterValue("lfoRate");
+  auto *lfoDepth = apvts.getRawParameterValue("lfoDepth");
+
+  if (attack && decay && sustain && release && cutoff && res && lfoRate &&
+      lfoDepth) {
+    synthEngine.updateParams(attack->load(), decay->load(), sustain->load(),
+                             release->load(), cutoff->load(), res->load(),
+                             lfoRate->load(), lfoDepth->load());
   }
 
   // Process synth
   synthEngine.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
 
   // Apply Master Gain
+  auto *gain = apvts.getRawParameterValue(ParamIDs::gain);
   if (gain)
     buffer.applyGain(gain->load());
 
-  // Send to Visualizer
-  if (audioVisualizerHook)
-    audioVisualizerHook(buffer);
+  // Send to Visualizer (Thread-Safe)
+  visualizerFIFO.push(buffer);
 }
 
 //==============================================================================
@@ -150,18 +158,31 @@ HowlingWolvesAudioProcessor::createParameterLayout() {
   juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
   // Example: Master Gain
-  layout.add(std::make_unique<juce::AudioParameterFloat>("gain", "Gain", 0.0f,
-                                                         1.0f, 0.5f));
+  layout.add(std::make_unique<juce::AudioParameterFloat>(ParamIDs::gain, "Gain",
+                                                         0.0f, 1.0f, 0.5f));
 
   // Attack, Decay, Sustain, Release (Simple ADSR for now, can be expanded)
-  layout.add(std::make_unique<juce::AudioParameterFloat>("attack", "Attack",
-                                                         0.01f, 5.0f, 0.1f));
-  layout.add(std::make_unique<juce::AudioParameterFloat>("decay", "Decay",
-                                                         0.01f, 5.0f, 0.1f));
-  layout.add(std::make_unique<juce::AudioParameterFloat>("sustain", "Sustain",
-                                                         0.0f, 1.0f, 1.0f));
-  layout.add(std::make_unique<juce::AudioParameterFloat>("release", "Release",
-                                                         0.01f, 5.0f, 0.1f));
+  layout.add(std::make_unique<juce::AudioParameterFloat>(
+      ParamIDs::attack, "Attack", 0.01f, 5.0f, 0.1f));
+  layout.add(std::make_unique<juce::AudioParameterFloat>(
+      ParamIDs::decay, "Decay", 0.01f, 5.0f, 0.1f));
+
+  // Filter Parameters
+  layout.add(std::make_unique<juce::AudioParameterFloat>(
+      "cutoff", "Cutoff",
+      juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.25f), 20000.0f));
+  layout.add(std::make_unique<juce::AudioParameterFloat>(
+      "resonance", "Resonance", 0.0f, 1.0f, 0.0f));
+
+  // LFO Parameters (Vibrato)
+  layout.add(std::make_unique<juce::AudioParameterFloat>("lfoRate", "LFO Rate",
+                                                         0.1f, 20.0f, 5.0f));
+  layout.add(std::make_unique<juce::AudioParameterFloat>(
+      "lfoDepth", "LFO Depth", 0.0f, 1.0f, 0.0f));
+  layout.add(std::make_unique<juce::AudioParameterFloat>(
+      ParamIDs::sustain, "Sustain", 0.0f, 1.0f, 1.0f));
+  layout.add(std::make_unique<juce::AudioParameterFloat>(
+      ParamIDs::release, "Release", 0.01f, 5.0f, 0.1f));
 
   return layout;
 }

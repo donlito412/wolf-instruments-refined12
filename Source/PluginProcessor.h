@@ -3,7 +3,19 @@
 #include "PresetManager.h"
 #include "SampleManager.h"
 #include "SynthEngine.h"
+#include "VisualizerFIFO.h"
 #include <JuceHeader.h>
+
+namespace ParamIDs {
+static const juce::String attack = "attack";
+static const juce::String decay = "decay";
+static const juce::String sustain = "sustain";
+static const juce::String release = "release";
+static const juce::String gain = "gain";
+// Future expansion for Delay/Reverb
+// static const juce::String delayTime = "delayTime";
+// ...
+} // namespace ParamIDs
 
 class HowlingWolvesAudioProcessor : public juce::AudioProcessor {
 public:
@@ -48,24 +60,8 @@ public:
   juce::MidiKeyboardState &getKeyboardState() { return keyboardState; }
   PresetManager &getPresetManager() { return presetManager; }
 
-  // Visualizer FIFO
-  // Ideally, PluginEditor polls this, but we need to push to it.
-  // Actually, VisualizerComponent has the FIFO. Editor owns
-  // VisualizerComponent. So Processor needs to push to Editor? No, bad
-  // coupling. Better: Processor has a method `pushToVisualizer` or just exposes
-  // a lock-free FIFO that Editor reads. OR: Editor passes its Visualizer's
-  // "push" method to Processor as a lambda? Let's use a public AudioBuffer in
-  // Processor that Editor reads? No, thread safety.
-
-  // Simplest: Processor owns a `VisualizerFIFO` (like AbstractFifo wrapper) and
-  // exposes it. But our VisualizerComponent *already* has the FIFO logic inside
-  // it. So we just need to get data to it. Let's add a Safe pointer or use a
-  // generic Broadcaster.
-
-  // Let's go with: Processor has a lock-free FIFO. Editor reads from it to feed
-  // VisualizerComponent. Actually, I'll just add `pushToVisualizer(buffer)`
-  // which calls a hook if set.
-  std::function<void(const juce::AudioBuffer<float> &)> audioVisualizerHook;
+  // Thread-Safe Visualizer FIFO (Josh Hodge Style)
+  VisualizerFIFO visualizerFIFO;
 
 private:
   //==============================================================================

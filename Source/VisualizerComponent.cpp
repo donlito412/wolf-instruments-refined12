@@ -8,53 +8,45 @@ VisualizerComponent::VisualizerComponent() {
 VisualizerComponent::~VisualizerComponent() { stopTimer(); }
 
 void VisualizerComponent::pushBuffer(const juce::AudioBuffer<float> &buffer) {
-  if (buffer.getNumChannels() > 0) {
-    auto *channelData = buffer.getReadPointer(0);
-    int numSamples = buffer.getNumSamples();
-
-    int start1, size1, start2, size2;
-    fifo.prepareToWrite(numSamples, start1, size1, start2, size2);
-
-    if (size1 > 0)
-      std::copy(channelData, channelData + size1, fifoBuffer.data() + start1);
-    if (size2 > 0)
-      std::copy(channelData + size1, channelData + size1 + size2,
-                fifoBuffer.data() + start2);
-
-    fifo.finishedWrite(size1 + size2);
+  // We don't push from here anymore if we are using the external FIFO directly
+  // from Processor. Ideally, this method is deprecated or changed. But if the
+  // Processor calls visualizerFIFO.push, we don't need this method strictly
+  // speaking, unless we want to keep it as a wrapper? Actually, Processor calls
+  // `visualizerFIFO.push`, not `visualizer.pushBuffer`. So this method is
+  // likely unused now, but let's keep it safe or empty.
+  if (externalFIFO) {
+    externalFIFO->push(buffer);
   }
 }
 
 void VisualizerComponent::timerCallback() {
-  // Read from FIFO to fill scopeData
-  int numSamples = fifo.getNumReady();
-  if (numSamples > 0) {
-    std::array<float, 4096> tempBuffer;
-    int start1, size1, start2, size2;
-    fifo.prepareToRead(numSamples, start1, size1, start2, size2);
+  if (!externalFIFO)
+    return;
 
-    if (size1 > 0)
-      std::copy(fifoBuffer.data() + start1, fifoBuffer.data() + start1 + size1,
-                tempBuffer.data());
-    if (size2 > 0)
-      std::copy(fifoBuffer.data() + start2, fifoBuffer.data() + start2 + size2,
-                tempBuffer.data() + size1);
+  std::vector<float> readBuffer;
+  externalFIFO->pop(readBuffer);
 
-    fifo.finishedRead(size1 + size2);
+  if (readBuffer.empty())
+    return;
 
-    // Update scopeData (Simple rolling or trigger? Let's just grab the latest
-    // chunk) Actually, for a visualizer, we want to shift data or just replace
-    // it. Let's just copy exactly 'scopeSize' from the END of what we read, or
-    // shift.
+  // Update scopeData by shifting and appending
+  // Simple optimization: just copy the last N samples if we have enough
+  size_t numNewSamples = readBuffer.size();
 
-    for (int i = 0; i < size1 + size2; ++i) {
-      // Shift left
-      for (int j = 0; j < scopeSize - 1; ++j)
-        scopeData[j] = scopeData[j + 1];
-      scopeData[scopeSize - 1] = tempBuffer[i];
-    }
-    repaint();
+  if (numNewSamples >= scopeSize) {
+    // If we have more new data than the scope size, just copy the latest chunk
+    std::copy(readBuffer.end() - scopeSize, readBuffer.end(),
+              scopeData.begin());
+  } else {
+    // Shift existing data left
+    std::copy(scopeData.begin() + numNewSamples, scopeData.end(),
+              scopeData.begin());
+    // Append new data at the end
+    std::copy(readBuffer.begin(), readBuffer.end(),
+              scopeData.end() - numNewSamples);
   }
+
+  repaint();
 }
 
 void VisualizerComponent::paint(juce::Graphics &g) {

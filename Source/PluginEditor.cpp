@@ -3,264 +3,28 @@
 #include "VisualizerComponent.h"
 
 //==============================================================================
-DeepCaveLookAndFeel::DeepCaveLookAndFeel() {}
-
-void DeepCaveLookAndFeel::drawWhiteNote(int note, juce::Graphics &g,
-                                        juce::Rectangle<float> area,
-                                        bool isDown, bool isOver,
-                                        juce::Colour lineColour,
-                                        juce::Colour textColour) {
-  auto c = juce::Colour::fromString("FF2A2A30"); // Dark Slate/Charcoal
-
-  if (isDown)
-    c = juce::Colour::fromString("FF88CCFF"); // Ice Blue Glow
-
-  // Gradient for depth
-  g.setGradientFill(juce::ColourGradient(c.brighter(0.1f), area.getTopLeft(),
-                                         c.darker(0.1f), area.getBottomLeft(),
-                                         false));
-  g.fillRect(area);
-
-  // Silver Edge
-  g.setColour(juce::Colour::fromString("FF888890"));
-  g.drawRect(area, 1.0f);
-
-  // Bottom shadow simulation
-  g.setGradientFill(juce::ColourGradient(
-      juce::Colours::black.withAlpha(0.0f),
-      area.getBottomLeft().translated(0, -10),
-      juce::Colours::black.withAlpha(0.5f), area.getBottomLeft(), false));
-  g.fillRect(area.removeFromBottom(10));
-}
-
-void DeepCaveLookAndFeel::drawBlackNote(int note, juce::Graphics &g,
-                                        juce::Rectangle<float> area,
-                                        bool isDown, bool isOver,
-                                        juce::Colour noteFillColour) {
-  auto c = juce::Colour::fromString("FF101010"); // Near black matte
-
-  if (isDown)
-    c = juce::Colour::fromString("FF4477AA"); // Darker Ice Blue
-
-  g.setColour(c);
-  g.fillRect(area);
-
-  // Silver Edge
-  g.setColour(juce::Colour::fromString("FF666670"));
-  g.drawRect(area, 1.0f);
-
-  g.setGradientFill(juce::ColourGradient(
-      juce::Colours::white.withAlpha(0.1f), area.getTopLeft(),
-      juce::Colours::transparentWhite, area.getBottomLeft(), false));
-  g.fillRect(area);
-}
-
-void DeepCaveLookAndFeel::drawRotarySlider(
-    juce::Graphics &g, int x, int y, int width, int height, float sliderPos,
-    float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) {
-  auto radius = (float)juce::jmin(width / 2, height / 2) - 4.0f;
-  auto centreX = (float)x + (float)width * 0.5f;
-  auto centreY = (float)y + (float)height * 0.5f;
-  auto rx = centreX - radius;
-  auto ry = centreY - radius;
-  auto rw = radius * 2.0f;
-  auto angle =
-      rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
-
-  // Brushed Silver Face (Radial Gradient)
-  juce::ColourGradient gradient(juce::Colour::fromString("FFCCCCCC"), centreX,
-                                centreY, juce::Colour::fromString("FF333333"),
-                                rx, ry, true);
-  gradient.addColour(0.4, juce::Colour::fromString("FF888888"));
-  gradient.addColour(0.7, juce::Colour::fromString("FFAAAAAA"));
-
-  g.setGradientFill(gradient);
-  g.fillEllipse(rx, ry, rw, rw);
-
-  // Metallic Rim
-  g.setColour(juce::Colour::fromString("FF666670"));
-  g.drawEllipse(rx, ry, rw, rw, 2.0f);
-
-  // Indicator (Ice Blue)
-  juce::Path p;
-  auto pointerLength = radius * 0.7f;
-  auto pointerThickness = 3.0f;
-  p.addRectangle(-pointerThickness * 0.5f, -radius, pointerThickness,
-                 pointerLength);
-  p.applyTransform(
-      juce::AffineTransform::rotation(angle).translated(centreX, centreY));
-
-  g.setColour(juce::Colour::fromString("FF88CCFF")); // Ice Blue
-  g.fillPath(p);
-
-  // Glow effect for indicator
-  g.setColour(juce::Colour::fromString("FF88CCFF").withAlpha(0.6f));
-  g.strokePath(p, juce::PathStrokeType(2.0f));
-}
-
-void DeepCaveLookAndFeel::drawButtonBackground(
-    juce::Graphics &g, juce::Button &button,
-    const juce::Colour &backgroundColour, bool shouldDrawButtonAsHighlighted,
-    bool shouldDrawButtonAsDown) {
-  auto area = button.getLocalBounds().toFloat();
-
-  // 1. Panel Body (Glass)
-  // Brighter on hover (0.5f), standard (0.3f)
-  float alpha = shouldDrawButtonAsHighlighted ? 0.5f : 0.3f;
-  g.setColour(juce::Colours::black.withAlpha(alpha));
-  g.fillRect(area);
-
-  // Active State (Ice Blue Tint)
-  if (shouldDrawButtonAsDown) {
-    g.setColour(juce::Colour::fromString("FF88CCFF").withAlpha(0.2f));
-    g.fillRect(area);
-  }
-
-  // 2. Metallic Edge
-  // Active = Ice Blue Border, Normal = Metallic
-  g.setColour(shouldDrawButtonAsDown ? juce::Colour::fromString("FF88CCFF")
-                                     : juce::Colour::fromString("FF666670"));
-  g.drawRect(area, 1.0f);
-
-  // 3. Corner Screws (Industrial Feel)
-  float screwSize = 3.0f;
-  g.setColour(juce::Colour::fromString("FFCCCCCC")); // Silver screws
-  // Inset screws slightly
-  g.fillEllipse(area.getX() + 3, area.getY() + 3, screwSize, screwSize);
-  g.fillEllipse(area.getRight() - 6, area.getY() + 3, screwSize, screwSize);
-  g.fillEllipse(area.getX() + 3, area.getBottom() - 6, screwSize, screwSize);
-  g.fillEllipse(area.getRight() - 6, area.getBottom() - 6, screwSize,
-                screwSize);
-}
-
-void DeepCaveLookAndFeel::drawLinearSlider(juce::Graphics &g, int x, int y,
-                                           int width, int height,
-                                           float sliderPos, float minSliderPos,
-                                           float maxSliderPos,
-                                           const juce::Slider::SliderStyle,
-                                           juce::Slider &slider) {
-  auto trackWidth = 4.0f;
-  juce::Point<float> startPoint((float)x + (float)width * 0.5f, (float)height);
-  juce::Point<float> endPoint((float)x + (float)width * 0.5f, (float)y);
-
-  // Rail
-  juce::Path track;
-  track.startNewSubPath(startPoint);
-  track.lineTo(endPoint);
-  g.setColour(juce::Colour::fromString("FF222222"));
-  g.strokePath(track, juce::PathStrokeType(trackWidth));
-
-  // Active Rail (Ice Blue)
-  juce::Path activeTrack;
-  juce::Point<float> sliderPoint((float)x + (float)width * 0.5f, sliderPos);
-  activeTrack.startNewSubPath(startPoint);
-  activeTrack.lineTo(sliderPoint);
-  g.setColour(juce::Colour::fromString("FF88CCFF"));
-  g.strokePath(activeTrack, juce::PathStrokeType(trackWidth));
-
-  // Thumb
-  g.setColour(juce::Colours::white);
-  g.fillEllipse(sliderPoint.x - 5, sliderPoint.y - 5, 10, 10);
-}
-
-void DeepCaveLookAndFeel::drawPanel(juce::Graphics &g,
-                                    juce::Rectangle<float> area,
-                                    const juce::String &title) {
-  // Drop Shadow
-  g.setColour(juce::Colours::black.withAlpha(0.6f));
-  g.fillRect(area.translated(4, 4));
-
-  // Panel Body (Glass / Semi-Transparent)
-  g.setColour(juce::Colours::black.withAlpha(0.3f)); // 30% Opacity
-  g.fillRect(area);
-
-  // Metallic Edge (Thinner)
-  g.setColour(juce::Colour::fromString("FF666670"));
-  g.drawRect(area, 1.0f);
-
-  // Corner Screws (Smaller)
-  float screwSize = 3.0f;
-  g.setColour(juce::Colour::fromString("FFCCCCCC"));
-  g.fillEllipse(area.getX() + 4, area.getY() + 4, screwSize, screwSize);
-  g.fillEllipse(area.getRight() - 8, area.getY() + 4, screwSize, screwSize);
-  g.fillEllipse(area.getX() + 4, area.getBottom() - 8, screwSize, screwSize);
-  g.fillEllipse(area.getRight() - 8, area.getBottom() - 8, screwSize,
-                screwSize);
-
-  // Title Label Background (Darker, transparent)
-  if (title.isNotEmpty()) {
-    auto titleArea = area.removeFromTop(20);
-    g.setColour(juce::Colours::black.withAlpha(0.5f));
-    g.fillRect(titleArea);
-    g.setColour(juce::Colour::fromString("FF9999AA"));
-    g.setFont(12.0f);
-    g.drawText(title.toUpperCase(), titleArea, juce::Justification::centred,
-               false);
-  }
-}
-
-void DeepCaveLookAndFeel::drawLogo(juce::Graphics &g,
-                                   juce::Rectangle<float> area) {
-  // 1. Create Text Path Directly
-  juce::Font logoFont(24.0f, juce::Font::bold);
-  logoFont.setExtraKerningFactor(0.15f); // Cinematic spacing
-
-  juce::Path textPath;
-  juce::GlyphArrangement glyphs;
-  glyphs.addLineOfText(logoFont, "HOWLING WOLVES", 0, 0);
-  glyphs.createPath(textPath);
-
-  // Center the path in the area
-  auto pathBounds = textPath.getBounds();
-  auto offset = area.getCentre() - pathBounds.getCentre();
-  textPath.applyTransform(
-      juce::AffineTransform::translation(offset.x, offset.y));
-
-  // 2. Glow / Backlight (Ice Blue)
-  g.setColour(juce::Colour::fromString("FF88CCFF").withAlpha(0.3f));
-  for (int i = 0; i < 3; ++i) {
-    g.strokePath(textPath, juce::PathStrokeType(6.0f - i * 1.5f));
-  }
-
-  // 3. Metallic Fill (Gradient)
-  // Recalculate bounds after transform
-  pathBounds = textPath.getBounds();
-  juce::ColourGradient metalGradient(
-      juce::Colour::fromString("FFEEEEEE"), 0, pathBounds.getY(),
-      juce::Colour::fromString("FF444444"), 0, pathBounds.getBottom(), false);
-
-  g.setGradientFill(metalGradient);
-  g.fillPath(textPath);
-
-  // 4. White Rim for sharpness
-  g.setColour(juce::Colours::white.withAlpha(0.4f));
-  g.strokePath(textPath, juce::PathStrokeType(1.0f));
-}
 
 //==============================================================================
 HowlingWolvesAudioProcessorEditor::HowlingWolvesAudioProcessorEditor(
     HowlingWolvesAudioProcessor &p)
     : AudioProcessorEditor(&p), audioProcessor(p),
       attackAttachment(std::make_unique<SliderAttachment>(
-          audioProcessor.getAPVTS(), "ATTACK", attackSlider)),
+          audioProcessor.getAPVTS(), ParamIDs::attack, attackSlider)),
       decayAttachment(std::make_unique<SliderAttachment>(
-          audioProcessor.getAPVTS(), "DECAY", decaySlider)),
+          audioProcessor.getAPVTS(), ParamIDs::decay, decaySlider)),
       sustainAttachment(std::make_unique<SliderAttachment>(
-          audioProcessor.getAPVTS(), "SUSTAIN", sustainSlider)),
+          audioProcessor.getAPVTS(), ParamIDs::sustain, sustainSlider)),
       releaseAttachment(std::make_unique<SliderAttachment>(
-          audioProcessor.getAPVTS(), "RELEASE", releaseSlider)),
+          audioProcessor.getAPVTS(), ParamIDs::release, releaseSlider)),
       gainAttachment(std::make_unique<SliderAttachment>(
-          audioProcessor.getAPVTS(), "GAIN", gainSlider)),
+          audioProcessor.getAPVTS(), ParamIDs::gain, gainSlider)),
       keyboardComponent(audioProcessor.getKeyboardState(),
                         juce::MidiKeyboardComponent::horizontalKeyboard),
       presetBrowser(audioProcessor.getPresetManager()) {
 
-  // Hook Visualizer
+  // Connect Visualizer to Processor FIFO
+  visualizer.setFIFO(&audioProcessor.visualizerFIFO);
   addAndMakeVisible(visualizer);
-  audioProcessor.audioVisualizerHook =
-      [this](const juce::AudioBuffer<float> &buffer) {
-        visualizer.pushBuffer(buffer);
-      };
 
   // Load Background
   backgroundImage = juce::ImageCache::getFromMemory(
@@ -345,7 +109,7 @@ HowlingWolvesAudioProcessorEditor::HowlingWolvesAudioProcessorEditor(
 }
 
 HowlingWolvesAudioProcessorEditor::~HowlingWolvesAudioProcessorEditor() {
-  audioProcessor.audioVisualizerHook = nullptr;
+  visualizer.setFIFO(nullptr);
 }
 
 void HowlingWolvesAudioProcessorEditor::paint(juce::Graphics &g) {

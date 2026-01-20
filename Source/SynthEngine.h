@@ -58,6 +58,10 @@ public:
   void stopNote(float velocity, bool allowTailOff) override;
 
   void updateADSR(const juce::ADSR::Parameters &params);
+  void updateFilter(float cutoff, float resonance);
+  void updateLFO(float rate, float depth);
+  void prepare(double sampleRate, int samplesPerBlock);
+
   void pitchWheelMoved(int newPitchWheelValue) override {}
   void controllerMoved(int controllerNumber, int newControllerValue) override {}
 
@@ -79,6 +83,11 @@ private:
   juce::ADSR adsr;
   juce::ADSR::Parameters adsrParams;
 
+  // DSP
+  juce::dsp::StateVariableTPTFilter<float> filter;
+  juce::dsp::Oscillator<float> lfo;
+  float lfoDepth = 0.0f;
+
   JUCE_LEAK_DETECTOR(HowlingVoice)
 };
 
@@ -91,5 +100,8 @@ public:
   SynthEngine();
 
   void initialize();
-  void updateADSR(float attack, float decay, float sustain, float release);
+  void prepare(double sampleRate, int samplesPerBlock);
+  void updateParams(float attack, float decay, float sustain, float release,
+                    float cutoff, float resonance, float lfoRate,
+                    float lfoDepth);
 };

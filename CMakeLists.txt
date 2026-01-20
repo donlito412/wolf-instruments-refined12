@@ -47,6 +47,8 @@ target_sources(HowlingWolves
         Source/PresetBrowser.h
         Source/VisualizerComponent.cpp
         Source/VisualizerComponent.h
+        Source/DeepCaveLookAndFeel.cpp
+        Source/DeepCaveLookAndFeel.h
 )
 
 # Link against JUCE libraries
@@ -60,6 +62,7 @@ target_link_libraries(HowlingWolves
         juce::juce_graphics
         juce::juce_gui_basics
         juce::juce_gui_extra
+        juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
