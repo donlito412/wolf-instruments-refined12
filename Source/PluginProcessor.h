@@ -3,6 +3,7 @@
 #include "EffectsProcessor.h"
 #include "FilterProcessor.h"
 #include "LFOProcessor.h"
+#include "MidiProcessor.h"
 #include "PresetManager.h"
 #include "SampleManager.h"
 #include "SynthEngine.h"
@@ -84,6 +85,7 @@ private:
   FilterProcessor filterProcessor;
   LFOProcessor lfoProcessor;
   EffectsProcessor effectsProcessor;
+  MidiProcessor midiProcessor;
 
   //==============================================================================
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(HowlingWolvesAudioProcessor)

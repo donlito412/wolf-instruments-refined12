@@ -53,6 +53,10 @@ target_sources(HowlingWolves
         Source/EffectsTab.h
         Source/EffectsProcessor.cpp
         Source/EffectsProcessor.h
+        Source/MidiProcessor.cpp
+        Source/MidiProcessor.h
+        Source/MidiTab.cpp
+        Source/MidiTab.h
         Source/SettingsTab.cpp
         Source/SettingsTab.h
         Source/VisualizerComponent.cpp

@@ -68,6 +68,7 @@ void HowlingWolvesAudioProcessor::prepareToPlay(double sampleRate,
                                                 int samplesPerBlock) {
   synthEngine.setCurrentPlaybackSampleRate(sampleRate);
   synthEngine.prepare(sampleRate, samplesPerBlock);
+  midiProcessor.prepare(sampleRate);
 
   juce::dsp::ProcessSpec spec;
   spec.sampleRate = sampleRate;
@@ -108,9 +109,13 @@ void HowlingWolvesAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
   for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
     buffer.clear(i, 0, buffer.getNumSamples());
 
-  // Process keyboard state
+  // --- MIDI Processing Stage ---
+  // 1. Process keyboard state (Input -> MidiBuffer)
   keyboardState.processNextMidiBuffer(midiMessages, 0, buffer.getNumSamples(),
                                       true);
+
+  // 2. Perform Midi Transformation (Arp / Chords)
+  midiProcessor.process(midiMessages, buffer.getNumSamples(), getPlayHead());
 
   // Read parameters from APVTS and apply to synth engine (Josh Hodge pattern)
   auto *attackParam = apvts.getRawParameterValue("attack");
@@ -143,6 +148,38 @@ void HowlingWolvesAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
                              sustainParam->load(), releaseParam->load(),
                              filterCutoffParam->load(), filterResParam->load(),
                              lfoRateParam->load(), lfoDepthParam->load());
+  }
+
+  // --- Update Midi Processor ---
+  auto *arpOn = apvts.getRawParameterValue("arpEnabled");
+  auto *arpRate = apvts.getRawParameterValue("arpRate"); // 0=1/4, 1=1/8...
+  auto *arpMode = apvts.getRawParameterValue("arpMode");
+  auto *arpOct = apvts.getRawParameterValue("arpOctave");
+  auto *arpGate = apvts.getRawParameterValue("arpGate");
+  auto *chordMode = apvts.getRawParameterValue("chordMode");
+
+  if (arpOn && arpRate && arpMode && arpOct && arpGate) {
+    // Map Rate Index to float divisor logic (0 -> 0.0, 1 -> 0.3, 2 -> 0.6, 3 ->
+    // 0.9) Arpeggiator logic uses float thresholds:
+    // <=0.1 = 1/4, <=0.4 = 1/8, <=0.7 = 1/16, >0.7 = 1/32
+    float rateVal = arpRate->load(); // This is index? No, getRawParameterValue
+                                     // returns float index for Choices?
+    // Yes, Choice returns index as float (0.0, 1.0, 2.0).
+    // We need to map it.
+    // 0.0 (1/4) -> 0.0
+    // 1.0 (1/8) -> 0.3 (to trigger 1/8 logic)
+    // 2.0 (1/16) -> 0.6
+    // 3.0 (1/32) -> 0.9
+    float driverVal = rateVal * 0.3f;
+
+    bool isOn = *arpOn > 0.5f;
+    midiProcessor.getArp().setParameters(driverVal, (int)arpMode->load(),
+                                         (int)arpOct->load(), arpGate->load(),
+                                         isOn);
+  }
+
+  if (chordMode) {
+    midiProcessor.getChordEngine().setParameters((int)chordMode->load(), 0);
   }
 
   // --- Sample & Tune Parameters ---
@@ -317,6 +354,28 @@ HowlingWolvesAudioProcessor::createParameterLayout() {
       "reverbDamping", "Reverb Damping", 0.0f, 1.0f, 0.5f));
   layout.add(std::make_unique<juce::AudioParameterFloat>(
       "reverbMix", "Reverb Mix", 0.0f, 1.0f, 0.0f));
+
+  // --- MIDI Performance Parameters ---
+  layout.add(std::make_unique<juce::AudioParameterBool>("arpEnabled", "Arp On",
+                                                        false));
+  // Rates: 0=1/4, 1=1/8, 2=1/16, 3=1/32
+  layout.add(std::make_unique<juce::AudioParameterChoice>(
+      "arpRate", "Arp Rate", juce::StringArray{"1/4", "1/8", "1/16", "1/32"},
+      1)); // Default 1/8
+
+  layout.add(std::make_unique<juce::AudioParameterChoice>(
+      "arpMode", "Arp Mode",
+      juce::StringArray{"Up", "Down", "Up/Down", "Random"}, 0));
+
+  layout.add(std::make_unique<juce::AudioParameterInt>("arpOctave",
+                                                       "Arp Octaves", 1, 4, 1));
+  layout.add(std::make_unique<juce::AudioParameterFloat>("arpGate", "Arp Gate",
+                                                         0.1f, 1.0f, 0.5f));
+
+  // Chord Mode
+  layout.add(std::make_unique<juce::AudioParameterChoice>(
+      "chordMode", "Chord Mode",
+      juce::StringArray{"Off", "Major", "Minor", "7th", "9th"}, 0));
 
   return layout;
 }

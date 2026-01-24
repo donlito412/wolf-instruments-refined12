@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EffectsTab.h" // Added
+#include "MidiTab.h"
 #include "ModernCyberLookAndFeel.h"
 #include "ModulateTab.h"
 #include "PlayTab.h"

@@ -33,6 +33,8 @@ HowlingWolvesAudioProcessorEditor::HowlingWolvesAudioProcessorEditor(
               true); // Pass audioProcessor
   tabs.addTab("MODULATE", WolfColors::PANEL_DARK,
               new ModulateTab(audioProcessor), true); // Pass audioProcessor
+  tabs.addTab("PERFORM", WolfColors::PANEL_DARK, new MidiTab(audioProcessor),
+              true);
   tabs.addTab("EFFECTS", WolfColors::PANEL_DARK, new EffectsTab(audioProcessor),
               true);
   tabs.addTab("SETTINGS", WolfColors::PANEL_DARK,
