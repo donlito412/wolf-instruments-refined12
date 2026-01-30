@@ -8,6 +8,7 @@ class PresetManager {
 public:
   static const juce::File defaultDirectory;
   static const juce::File factoryDirectory;
+  static const juce::File sharedDirectory; // /Users/Shared/Wolf Instruments/
   static const juce::File projectDirectory;
   static const juce::String presetExtension;
 

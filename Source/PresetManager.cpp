@@ -14,23 +14,18 @@ const juce::File PresetManager::factoryDirectory{
 // Changed extension to .wav per user request
 const juce::String PresetManager::presetExtension{".wav"};
 
-const juce::File PresetManager::projectDirectory{
-    "/Users/jonfreeze/Wolf Instruments/Music/Wolf Instruments/Presets"};
+const juce::File PresetManager::sharedDirectory{
+    "/Users/Shared/Wolf Instruments"};
 
 PresetManager::PresetManager(juce::AudioProcessorValueTreeState &apvts,
                              SampleManager &sm)
     : valueTreeState(apvts), sampleManager(sm) {
-  // Create default (User) directory if it doesn't exist
-  if (!defaultDirectory.exists()) {
-    const auto result = defaultDirectory.createDirectory();
-    if (result.failed()) {
-      DBG("Could not create preset directory: " + result.getErrorMessage());
-    }
-  }
-
-  // We no longer enforce category subfolders.
-  // User can organize files as they wish.
+  // Do NOT create directories automatically.
+  // Rely on user having folders where they want them.
 }
+
+// We no longer enforce category subfolders.
+// User can organize files as they wish.
 
 void PresetManager::savePreset(const juce::String &presetName,
                                const juce::String &category) {
@@ -109,7 +104,7 @@ juce::File PresetManager::getPresetFile(const juce::String &presetName) const {
   if (f.existsAsFile())
     return f;
 
-  f = findInRoot(projectDirectory);
+  f = findInRoot(sharedDirectory);
   if (f.existsAsFile())
     return f;
 
@@ -163,21 +158,25 @@ juce::Array<juce::File> PresetManager::getAllPresets() const {
   auto options = juce::File::TypesOfFileToFind::findFiles;
 
   auto scanRoot = [&](const juce::File &root) {
-    if (!root.isDirectory())
+    DBG("Scanning root: " + root.getFullPathName());
+    if (!root.isDirectory()) {
+      DBG("Root is not a directory: " + root.getFullPathName());
       return;
+    }
     // Recursively find all files
     auto allFiles = root.findChildFiles(options, true, "*"); // Scan everything
 
     for (const auto &file : allFiles) {
       if (file.getFileExtension().equalsIgnoreCase(presetExtension)) {
+        DBG("Found preset: " + file.getFullPathName());
         presets.add(file);
       }
     }
   };
 
   scanRoot(defaultDirectory);
+  scanRoot(sharedDirectory); // Check Shared folder (Installer location)
   scanRoot(factoryDirectory);
-  scanRoot(projectDirectory);
 
   return presets;
 }

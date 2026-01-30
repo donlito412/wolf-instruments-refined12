@@ -24,3 +24,6 @@ cmake-build-*/
 # JUCE specific
 JuceLibraryCode/
 Music/
+
+# Installer
+Installer/

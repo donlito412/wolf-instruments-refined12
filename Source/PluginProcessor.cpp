@@ -5,7 +5,8 @@
 HowlingWolvesAudioProcessor::HowlingWolvesAudioProcessor()
     : AudioProcessor(
           BusesProperties()
-              .withInput("Input", juce::AudioChannelSet::stereo(), true)
+              // .withInput("Input", juce::AudioChannelSet::stereo(), true) //
+              // Disabled to prevent feedback loop in Standalone
               .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       apvts(*this, nullptr, "Parameters", createParameterLayout()),
       sampleManager(synthEngine), presetManager(apvts, sampleManager) {

@@ -20,10 +20,8 @@ HowlingWolvesAudioProcessorEditor::HowlingWolvesAudioProcessorEditor(
       BinaryData::howling_wolves_cave_bg_1768783846310_pngSize);
 
   // Set up size constraints
-  constrainer.setMinimumSize(700, 500);
-  constrainer.setMaximumSize(1200, 800);
-  setResizable(true, true);
-  setResizeLimits(700, 500, 1200, 800);
+  // NUCLEAR OPTION: Fixed Size, No Limits (Simplicity)
+  setResizable(false, false);
 
   // Set initial size
   setSize(800, 545);
@@ -57,6 +55,9 @@ HowlingWolvesAudioProcessorEditor::HowlingWolvesAudioProcessorEditor(
   // Keyboard
   addAndMakeVisible(keyboardComponent);
 
+  // Keyboard Setup
+  keyboardComponent.setAvailableRange(0, 127);
+
   // Preset browser overlay
   addChildComponent(presetBrowser);
   presetBrowser.setVisible(false);
@@ -66,6 +67,10 @@ HowlingWolvesAudioProcessorEditor::HowlingWolvesAudioProcessorEditor(
     browseButton.setButtonText(presetName);
     presetBrowser.setVisible(false);
   };
+
+  // Force initial layout and paint to prevent stall
+  resized();
+  repaint();
 }
 
 HowlingWolvesAudioProcessorEditor::~HowlingWolvesAudioProcessorEditor() {

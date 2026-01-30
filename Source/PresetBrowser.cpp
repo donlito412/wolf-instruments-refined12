@@ -38,7 +38,8 @@ PresetBrowser::PresetBrowser(PresetManager &pm) : presetManager(pm) {
                            juce::Colour::fromString("FF666670"));
   categoryFilter.onChange = [this] { filterPresets(); };
 
-  refresh();
+  // refresh(); // Deferred to first open (visibilityChanged) or explicit
+  // refresh
 }
 
 PresetBrowser::~PresetBrowser() {}
@@ -143,6 +144,7 @@ void PresetBrowser::refresh() {
     }
 
     allPresetsInfo.push_back({name, category});
+    DBG("Preset: " + name + " | Category: " + category);
   }
 
   filterPresets();

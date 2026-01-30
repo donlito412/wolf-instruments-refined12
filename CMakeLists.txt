@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(HowlingWolves VERSION 0.0.1)
+project(HowlingWolves VERSION 0.0.2)
 
 # Initialize JUCE 
 # We'll use a recent stable version of JUCE 7
@@ -22,7 +22,7 @@ juce_add_plugin(HowlingWolves
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE WolF
-    PLUGIN_CODE Howl
+    PLUGIN_CODE Hwl2
     FORMATS AU VST3 Standalone
     PRODUCT_NAME "Howling Wolves"
 )
