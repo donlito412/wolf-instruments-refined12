@@ -45,10 +45,13 @@ PresetBrowser::PresetBrowser(PresetManager &pm) : presetManager(pm) {
 PresetBrowser::~PresetBrowser() {}
 
 void PresetBrowser::paint(juce::Graphics &g) {
-  // Sidebar background handled by parent or transparent
-  // Just draw a subtle separator on the right
+  // Fill background with semi-transparent dark color (Glass Look)
+  g.setColour(WolfColors::PANEL_DARKER);
+  g.fillRoundedRectangle(getLocalBounds().toFloat(), 5.0f);
+
+  // Draw border
   g.setColour(WolfColors::BORDER_SUBTLE);
-  g.fillRect(getWidth() - 1, 0, 1, getHeight());
+  g.drawRoundedRectangle(getLocalBounds().toFloat(), 5.0f, 1.0f);
 }
 
 void PresetBrowser::resized() {

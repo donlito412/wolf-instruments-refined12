@@ -34,9 +34,8 @@ private:
   juce::Label titleLabel{"PRESET BROWSER", "PRESET BROWSER"};
 
   // Data
-  juce::StringArray categories = {"All",      "Bass",    "Leads", "Pads",
-                                  "Keys",     "Plucks",  "Drums", "FX",
-                                  "Textures", "Sequence"};
+  juce::StringArray categories = {"All",    "Bass",  "Leads", "Pads",    "Keys",
+                                  "Plucks", "Drums", "FX",    "Sequence"};
 
   // Full list of all loaded presets (pairs of Name, Category)
   struct PresetInfo {

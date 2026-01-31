@@ -43,7 +43,8 @@ void SampleManager::loadSound(const juce::File &file) {
     bool isPluck = folder.equalsIgnoreCase("Plucks");
     bool isBass = folder.equalsIgnoreCase("Bass");
     bool isFX = folder.equalsIgnoreCase("FX");
-    bool isTexture = folder.containsIgnoreCase("Texture");
+    bool isTexture = false; // folder.containsIgnoreCase("Texture"); // Removed
+                            // per user request
     bool isSequence = folder.containsIgnoreCase("Sequence");
     bool isDrum = folder.containsIgnoreCase("Drum");
 
